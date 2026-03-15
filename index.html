@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Opening Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1208;
+    --parchment: #f5ede0;
+    --parchment-dark: #ede0cc;
+    --gold: #c8922a;
+    --gold-light: #e8b84b;
+    --board-light: #f0d9b5;
+    --board-dark: #b58863;
+    --board-border: #6b4423;
+    --accent: #8b1a1a;
+    --muted: #7a6a58;
+    --shadow: rgba(26,18,8,0.25);
+  }
+
+  body {
+    background: var(--ink);
+    font-family: 'Crimson Pro', Georgia, serif;
+    color: var(--parchment);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* Header */
+  header {
+    padding: 20px 32px 16px;
+    border-bottom: 1px solid rgba(200,146,42,0.2);
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(26,18,8,0.6);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon { font-size: 1.8rem; line-height: 1; }
+
+  .header-actions { display: flex; gap: 10px; }
+
+  /* Buttons */
+  .btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: transparent;
+  }
+  .btn-gold {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .btn-gold:hover { background: var(--gold); color: var(--ink); }
+  .btn-accent {
+    border-color: var(--accent);
+    color: #d4706e;
+  }
+  .btn-accent:hover { background: var(--accent); color: var(--parchment); }
+  .btn-muted { border-color: var(--muted); color: var(--muted); }
+  .btn-muted:hover { border-color: var(--parchment); color: var(--parchment); }
+  .btn-sm { padding: 5px 10px; font-size: 0.65rem; }
+
+  /* Main layout */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 300px 1fr 320px;
+    gap: 0;
+    height: calc(100vh - 65px);
+    overflow: hidden;
+  }
+
+  /* Panels */
+  .panel {
+    border-right: 1px solid rgba(200,146,42,0.12);
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .panel:last-child { border-right: none; border-left: 1px solid rgba(200,146,42,0.12); }
+
+  .panel-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(200,146,42,0.2);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* Opening list */
+  .opening-item {
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    border-radius: 2px;
+  }
+  .opening-item:hover { border-color: rgba(200,146,42,0.3); background: rgba(200,146,42,0.05); }
+  .opening-item.active { border-color: var(--gold); background: rgba(200,146,42,0.1); }
+  .opening-item { display: flex; align-items: center; gap: 8px; }
+  .opening-item-content { flex: 1; min-width: 0; cursor: pointer; }
+  .order-btns {
+    display: flex; flex-direction: column; gap: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .opening-item:hover .order-btns { opacity: 1; pointer-events: auto; }
+  .order-btn {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; padding: 1px 4px; font-size: 0.65rem;
+    line-height: 1;
+  }
+  .order-btn:hover { color: var(--gold); }
+  .order-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .opening-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--parchment);
+    margin-bottom: 3px;
+  }
+  .opening-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  /* Center — board + navigator */
+  .center-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 20px;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  /* Chess board */
+  .board-container {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    border: 3px solid var(--board-border);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(240,217,181,0.1);
+    width: 520px; height: 520px;
+  }
+
+  .square {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.6rem;
+    line-height: 1;
+    position: relative;
+    cursor: default;
+    transition: background 0.1s;
+  }
+  .square.light { background: var(--board-light); }
+  .square.dark { background: var(--board-dark); }
+  .square.highlight { outline: 2px solid var(--gold); outline-offset: -2px; z-index: 1; }
+  .square.move-from { outline: 3px solid var(--board-border); outline-offset: -3px; z-index: 1; }
+  .square.move-to { background: var(--gold); }
+
+  /* Piece contrast — white pieces: off-white */
+  .piece-white {
+    color: #f0e8d8;
+    text-shadow: 2px 2px 5px #1a1208;
+  }
+  /* Black pieces: app background color, no outline */
+  .piece-black {
+    color: #1a1208;
+  }
+
+  .coord-file, .coord-rank {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    color: rgba(0,0,0,0.4);
+    line-height: 1;
+  }
+  .square.dark .coord-file, .square.dark .coord-rank { color: rgba(240,217,181,0.5); }
+  .coord-file { bottom: 2px; right: 3px; }
+  .coord-rank { top: 2px; left: 3px; }
+
+  /* Move navigator */
+  .move-nav {
+    width: 520px;
+    background: rgba(26,18,8,0.4);
+    border: 1px solid rgba(200,146,42,0.15);
+    padding: 14px 16px;
+  }
+
+  .move-nav-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .move-sequence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 14px;
+    min-height: 32px;
+  }
+
+  .move-token {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.1s;
+    color: var(--muted);
+  }
+  .move-token:hover { color: var(--parchment); border-color: rgba(200,146,42,0.3); }
+  .move-token.active { color: var(--gold); border-color: var(--gold); background: rgba(200,146,42,0.1); }
+  .move-token.move-num { color: rgba(200,146,42,0.4); cursor: default; padding-right: 2px; }
+  .move-token.move-num:hover { border-color: transparent; background: none; color: rgba(200,146,42,0.4); }
+
+  .nav-controls {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .nav-btn {
+    background: transparent;
+    border: 1px solid rgba(200,146,42,0.25);
+    color: var(--gold);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.1s;
+    line-height: 1;
+  }
+  .nav-btn:hover { background: rgba(200,146,42,0.15); }
+  .nav-btn:disabled { opacity: 0.25; cursor: default; }
+
+  /* Branch display */
+  .branches {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
+  .branches-label {
+    color: var(--muted);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .branch-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 7px 10px;
+    margin-bottom: 4px;
+    border: 1px solid rgba(200,146,42,0.15);
+    cursor: pointer;
+    transition: all 0.12s;
+    color: var(--parchment-dark);
+  }
+  .branch-item:hover { border-color: var(--gold); color: var(--parchment); background: rgba(200,146,42,0.08); }
+  .branch-arrow { color: var(--gold); opacity: 0.6; flex-shrink: 0; padding-top: 2px; }
+  .branch-move { color: var(--gold-light); font-weight: 500; }
+  .branch-labels { margin-top: 4px; }
+  .branch-label {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  /* Right panel — editor */
+  .line-editor { }
+  .editor-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .editor-input {
+    width: 100%;
+    background: rgba(26,18,8,0.5);
+    border: 1px solid rgba(200,146,42,0.2);
+    color: var(--parchment);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    resize: vertical;
+  }
+  .editor-input:focus { border-color: var(--gold); }
+  .editor-input::placeholder { color: var(--muted); opacity: 0.5; }
+
+  .form-row { margin-bottom: 14px; }
+  .form-row-inline { display: flex; gap: 8px; }
+  .form-row-inline .form-row { flex: 1; }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(200,146,42,0.1);
+    border: 1px solid rgba(200,146,42,0.25);
+    padding: 3px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    margin: 2px;
+    cursor: pointer;
+  }
+  .tag:hover { background: rgba(139,26,26,0.3); border-color: var(--accent); color: #d4706e; }
+  .tag-x { opacity: 0.6; }
+
+  /* Lines list in editor */
+  .line-list { margin-top: 8px; }
+  .line-entry {
+    display: flex; align-items: flex-start; gap: 6px;
+    padding: 8px;
+    border: 1px solid rgba(200,146,42,0.1);
+    margin-bottom: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    transition: all 0.1s;
+    cursor: pointer;
+  }
+  .line-entry:hover { border-color: rgba(200,146,42,0.3); color: var(--parchment); }
+  .line-entry-moves { flex: 1; word-break: break-all; line-height: 1.6; }
+  .line-entry-name { color: var(--gold); font-size: 0.65rem; margin-bottom: 2px; }
+  .line-del { cursor: pointer; color: var(--muted); flex-shrink: 0; margin-top: 1px; }
+  .line-del:hover { color: #d4706e; }
+
+  .chapter-group { margin-bottom: 18px; }
+  .chapter-header {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(200,146,42,0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  .chapter-header:hover { color: var(--gold-light); }
+  .chapter-header .collapse-icon {
+    font-size: 0.65rem;
+    transition: transform 0.2s ease;
+  }
+  .chapter-group.collapsed .chapter-header .collapse-icon { transform: rotate(-90deg); }
+  .chapter-group.collapsed .chapter-content { display: none; }
+  .subchapter-group { margin-bottom: 12px; margin-left: 0; }
+  .subchapter-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    padding-left: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  .subchapter-header:hover { color: var(--parchment); }
+  .subchapter-header .collapse-icon {
+    font-size: 0.6rem;
+    transition: transform 0.2s ease;
+  }
+  .subchapter-group.collapsed .subchapter-header .collapse-icon { transform: rotate(-90deg); }
+  .subchapter-group.collapsed .subchapter-content { display: none; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,18,8,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: #221a0f;
+    border: 1px solid rgba(200,146,42,0.35);
+    padding: 28px;
+    width: 480px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    transform: translateY(10px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--gold);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(200,146,42,0.2);
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(200,146,42,0.25); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(200,146,42,0.5); }
+
+  .divider {
+    border: none;
+    border-top: 1px solid rgba(200,146,42,0.1);
+    margin: 14px 0;
+  }
+
+  .status-bar {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .no-opening {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; gap: 16px; color: var(--muted);
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    opacity: 0.5;
+  }
+  .no-opening-icon { font-size: 3rem; opacity: 0.4; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo"><span class="logo-icon">♟</span> Opening Book</div>
+  <div class="header-actions">
+    <button class="btn btn-muted" onclick="exportBackup()" title="Download backup">Export</button>
+    <button class="btn btn-muted" onclick="document.getElementById('import-file').click()" title="Restore from backup">Import</button>
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
+    <button class="btn btn-gold" onclick="openModal('new-opening')">+ New Opening</button>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: Opening List -->
+  <div class="panel" id="opening-list-panel">
+    <div class="panel-title">Repertoire</div>
+    <div id="opening-list"></div>
+  </div>
+
+  <!-- CENTER: Board + Navigator -->
+  <div class="center-panel" id="center">
+    <div id="no-opening-msg" class="no-opening" style="height:100%">
+      <div class="no-opening-icon">♙</div>
+      Select or create an opening
+    </div>
+    <div id="board-section" style="display:none; width:100%; display:none; flex-direction:column; align-items:center; gap:16px;">
+      <div class="board-container">
+        <div class="board" id="board"></div>
+      </div>
+      <div class="move-nav" id="move-nav">
+        <div class="move-nav-title">Move sequence</div>
+        <div class="move-sequence" id="move-sequence"></div>
+        <div class="nav-controls">
+          <button class="nav-btn" id="btn-start" onclick="goToStart()" title="Start">⏮</button>
+          <button class="nav-btn" id="btn-prev" onclick="stepBack()" title="Back">◀</button>
+          <button class="nav-btn" id="btn-next" onclick="stepForward()" title="Forward">▶</button>
+          <button class="nav-btn" id="btn-end" onclick="goToEnd()" title="End">⏭</button>
+          <span class="status-bar" id="move-status" style="margin-left:auto"></span>
+        </div>
+      </div>
+      <div class="move-nav" id="branch-section" style="display:none">
+        <div class="branches-label">Continuations from here</div>
+        <div id="branches-list" class="branches"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Line Editor -->
+  <div class="panel" id="editor-panel">
+    <div class="panel-title">
+      <span id="editor-title">Lines</span>
+      <button class="btn btn-gold btn-sm" onclick="openAddLineModalForNew()" id="add-line-btn" style="display:none">+ Line</button>
+    </div>
+    <div id="editor-content">
+      <div class="empty-state">Select an opening to manage its lines.</div>
+    </div>
+  </div>
+</main>
+
+</div>
+
+<!-- New Opening Modal -->
+<div class="modal-overlay" id="modal-new-opening">
+  <div class="modal">
+    <div class="modal-title">New Opening</div>
+    <div class="form-row">
+      <div class="editor-label">Opening Name</div>
+      <input class="editor-input" id="new-opening-name" placeholder="e.g. Sicilian Defense" style="height:38px">
+    </div>
+    <div class="form-row">
+      <div class="editor-label">Color</div>
+      <select class="editor-input" id="new-opening-color" style="height:38px; cursor:pointer">
+        <option value="white">White</option>
+        <option value="black">Black</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-muted" onclick="closeModal('new-opening')">Cancel</button>
+      <button class="btn btn-gold" onclick="createOpening()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Line Modal -->
+<div class="modal-overlay" id="modal-add-line">
+  <div class="modal">
+    <div class="modal-title" id="add-line-modal-title">Add Line</div>
+    <div class="form-row form-row-inline">
+      <div class="form-row">
+        <div class="editor-label">Chapter (optional)</div>
+        <input class="editor-input" id="new-line-chapter" placeholder="e.g. Main Lines" style="height:38px">
+      </div>
+      <div class="form-row">
+        <div class="editor-label">Subchapter (optional)</div>
+        <input class="editor-input" id="new-line-subchapter" placeholder="e.g. Najdorf" style="height:38px">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="editor-label">Line Name / Variation</div>
+      <input class="editor-input" id="new-line-name" placeholder="e.g. Najdorf Variation" style="height:38px">
+    </div>
+    <div class="form-row">
+      <div class="editor-label">Moves (SAN notation, space-separated — omit move numbers)</div>
+      <textarea class="editor-input" id="new-line-moves" placeholder="e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6" rows="4"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="editor-label">Notes (optional)</div>
+      <textarea class="editor-input" id="new-line-notes" placeholder="Key ideas, traps, typical plans..." rows="3"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-muted" onclick="closeAddLineModal()">Cancel</button>
+      <button class="btn btn-gold" id="add-line-submit-btn" onclick="submitLineForm()">Add Line</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Data ───────────────────────────────────────────────────────────────────
+let openings = JSON.parse(localStorage.getItem('chess-openings') || '[]');
+let currentOpeningIdx = null;
+let editingLineIdx = null; // null = add mode, number = edit mode
+let currentLineFlattened = []; // [{move, from, to, piece, fen}]
+let currentMoveIdx = -1; // -1 = start
+
+// ─── Chess pieces unicode ────────────────────────────────────────────────────
+const PIECES = {
+  K:'♚',Q:'♛',R:'♜',B:'♝',N:'♞',P:'♟',
+  k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'
+};
+
+// ─── Minimal chess logic ─────────────────────────────────────────────────────
+// Board: 8x8, [rank][file], rank 0=rank1, file 0=a
+// Piece: uppercase=white, lowercase=black, null=empty
+
+function startingBoard() {
+  const b = Array.from({length:8}, ()=>Array(8).fill(null));
+  const back = ['R','N','B','Q','K','B','N','R'];
+  for (let f=0;f<8;f++) {
+    b[0][f] = back[f];
+    b[1][f] = 'P';
+    b[6][f] = 'p';
+    b[7][f] = back[f].toLowerCase();
+  }
+  return b;
+}
+
+function cloneBoard(b) { return b.map(r=>r.slice()); }
+
+function squareToRC(sq) {
+  // sq like 'e4' → {r:3, c:4}
+  return { r: parseInt(sq[1])-1, c: sq.charCodeAt(0)-97 };
+}
+
+function rcToSquare(r,c) { return String.fromCharCode(97+c)+(r+1); }
+
+// Apply a SAN move to board. Returns {board, from, to} or null if invalid.
+// Supports: piece moves, captures, pawn advances, castling, promotion (=Q)
+function applySAN(board, san, whiteTurn) {
+  san = san.replace(/[+#!?]/g,'').trim();
+  const isWhite = whiteTurn;
+  const ownCase = p => isWhite ? p.toUpperCase() : p.toLowerCase();
+  const oppCase = p => isWhite ? p.toLowerCase() : p.toUpperCase();
+  const isOwn = p => p && (isWhite ? p===p.toUpperCase() : p===p.toLowerCase());
+  const isOpp = p => p && (isWhite ? p===p.toLowerCase() : p===p.toUpperCase());
+
+  let from=null, to=null, b=cloneBoard(board);
+
+  // Castling
+  if (san==='O-O' || san==='0-0') {
+    const r = isWhite?0:7;
+    b[r][4]=null; b[r][7]=null;
+    b[r][6]=ownCase('K'); b[r][5]=ownCase('R');
+    return {board:b, from:rcToSquare(r,4), to:rcToSquare(r,6)};
+  }
+  if (san==='O-O-O' || san==='0-0-0') {
+    const r = isWhite?0:7;
+    b[r][4]=null; b[r][0]=null;
+    b[r][2]=ownCase('K'); b[r][3]=ownCase('R');
+    return {board:b, from:rcToSquare(r,4), to:rcToSquare(r,2)};
+  }
+
+  // Promotion
+  let promoTo = null;
+  if (san.includes('=')) {
+    const parts = san.split('=');
+    promoTo = ownCase(parts[1][0].toUpperCase());
+    san = parts[0];
+  }
+
+  // Parse destination
+  let piece = 'P'; // default pawn
+  let rest = san;
+
+  if (rest[0] === rest[0].toUpperCase() && 'KQRBN'.includes(rest[0])) {
+    piece = rest[0];
+    rest = rest.slice(1);
+  }
+
+  // remove capture x
+  rest = rest.replace('x','');
+
+  // destination is last 2 chars
+  const destSq = rest.slice(-2);
+  const disambig = rest.slice(0,-2); // file/rank disambig
+
+  const {r:tr, c:tc} = squareToRC(destSq);
+  to = destSq;
+
+  // Find piece on board
+  const pieceCode = ownCase(piece);
+
+  for (let sr=0;sr<8;sr++) {
+    for (let sc=0;sc<8;sc++) {
+      if (b[sr][sc] !== pieceCode) continue;
+      // Check disambig
+      if (disambig.length===1) {
+        const d = disambig;
+        if (/[a-h]/.test(d) && String.fromCharCode(97+sc)!==d) continue;
+        if (/[1-8]/.test(d) && (sr+1).toString()!==d) continue;
+      } else if (disambig.length===2) {
+        const {r:dr,c:dc}=squareToRC(disambig);
+        if (sr!==dr||sc!==dc) continue;
+      }
+      // Check if move is pseudo-legal
+      if (canMove(b, sr, sc, tr, tc, piece.toUpperCase(), isWhite)) {
+        from = rcToSquare(sr,sc);
+        b[tr][tc] = promoTo || pieceCode;
+        b[sr][sc] = null;
+        // en passant
+        if (piece.toUpperCase()==='P' && sc!==tc && !board[tr][tc]) {
+          b[isWhite?tr-1:tr+1][tc]=null;
+        }
+        return {board:b, from, to};
+      }
+    }
+  }
+  return null; // invalid
+}
+
+function canMove(board, sr, sc, tr, tc, piece, isWhite) {
+  if (sr===tr&&sc===tc) return false;
+  const dr=tr-sr, dc=tc-sc;
+  const isOwn = p => p && (isWhite ? p===p.toUpperCase() : p===p.toLowerCase());
+  if (isOwn(board[tr][tc])) return false;
+
+  switch(piece) {
+    case 'P': {
+      const dir = isWhite?1:-1;
+      const start = isWhite?1:6;
+      if (dc===0) {
+        if (dr===dir && !board[tr][tc]) return true;
+        if (dr===2*dir && sr===start && !board[sr+dir][sc] && !board[tr][tc]) return true;
+      }
+      if (Math.abs(dc)===1 && dr===dir) {
+        // capture (or en passant — would need last-move tracking)
+        if (board[tr][tc]) return true;
+        return false;
+      }
+      return false;
+    }
+    case 'N':
+      return (Math.abs(dr)===2&&Math.abs(dc)===1)||(Math.abs(dr)===1&&Math.abs(dc)===2);
+    case 'B':
+      if (Math.abs(dr)!==Math.abs(dc)) return false;
+      return clearDiag(board,sr,sc,tr,tc);
+    case 'R':
+      if (dr!==0&&dc!==0) return false;
+      return clearLine(board,sr,sc,tr,tc);
+    case 'Q':
+      if (Math.abs(dr)===Math.abs(dc)) return clearDiag(board,sr,sc,tr,tc);
+      if (dr===0||dc===0) return clearLine(board,sr,sc,tr,tc);
+      return false;
+    case 'K':
+      return Math.abs(dr)<=1&&Math.abs(dc)<=1;
+  }
+  return false;
+}
+
+function clearLine(b,sr,sc,tr,tc) {
+  const dr=Math.sign(tr-sr), dc=Math.sign(tc-sc);
+  let r=sr+dr, c=sc+dc;
+  while(r!==tr||c!==tc) { if(b[r][c]) return false; r+=dr; c+=dc; }
+  return true;
+}
+function clearDiag(b,sr,sc,tr,tc) { return clearLine(b,sr,sc,tr,tc); }
+
+// ─── Line path helpers (for category/subcategory/line labels) ──────────────────
+function getMovesFromLine(line) {
+  return (line.moves || '').trim().split(/\s+/).filter(m => m && !/^\d+\./.test(m));
+}
+
+function lineHasPathPrefix(line, path) {
+  const moves = getMovesFromLine(line);
+  if (path.length > moves.length) return false;
+  for (let i = 0; i < path.length; i++) {
+    if (moves[i] !== path[i]) return false;
+  }
+  return true;
+}
+
+function getLinesForMove(allLines, path, move) {
+  const nextPath = path.concat([move]);
+  return allLines.filter(l => lineHasPathPrefix(l, nextPath));
+}
+
+/** Returns labels for a move: category if all lines in category play it, else category-subcategory, else category-subcategory-line. */
+function getLabelsForMove(allLines, path, move) {
+  const linesPlayingMove = getLinesForMove(allLines, path, move);
+  if (linesPlayingMove.length === 0) return [];
+
+  const cat = ch => (ch || 'Uncategorized');
+  const labels = [];
+  const byChapter = {};
+  for (const l of linesPlayingMove) {
+    const ch = (l.chapter || '').trim();
+    if (!byChapter[ch]) byChapter[ch] = {};
+    const sub = (l.subchapter || '').trim();
+    if (!byChapter[ch][sub]) byChapter[ch][sub] = [];
+    byChapter[ch][sub].push(l);
+  }
+
+  for (const ch of Object.keys(byChapter)) {
+    const linesInChapter = allLines.filter(l => (l.chapter || '').trim() === ch);
+    const linesInChapterPlayingMove = [];
+    for (const sub of Object.keys(byChapter[ch])) {
+      linesInChapterPlayingMove.push(...byChapter[ch][sub]);
+    }
+
+    if (linesInChapter.length === linesInChapterPlayingMove.length && linesInChapter.length > 0) {
+      labels.push(cat(ch));
+    } else {
+      for (const sub of Object.keys(byChapter[ch])) {
+        const linesInSub = allLines.filter(l => (l.chapter || '').trim() === ch && (l.subchapter || '').trim() === sub);
+        const linesInSubPlayingMove = byChapter[ch][sub];
+
+        if (sub && linesInSub.length === linesInSubPlayingMove.length && linesInSub.length > 0) {
+          labels.push(`${cat(ch)} - ${sub}`);
+        } else {
+          for (const l of linesInSubPlayingMove) {
+            const parts = [cat(ch)];
+            if (sub) parts.push(sub);
+            parts.push(l.name || '(unnamed)');
+            labels.push(parts.join(' - '));
+          }
+        }
+      }
+    }
+  }
+  return labels;
+}
+
+// ─── Build move tree from lines ──────────────────────────────────────────────
+function buildTree(lines) {
+  // Tree node: {move, children:{san: node}, name, notes, board, from, to}
+  const root = {move:null, children:{}, names:[], board:startingBoard(), white:true};
+
+  for (const line of lines) {
+    const moves = (line.moves||'').trim().split(/\s+/).filter(m=>m&&!/^\d+\./.test(m));
+    let node = root;
+    for (const san of moves) {
+      if (!node.children[san]) {
+        const result = applySAN(node.board, san, node.white);
+        if (!result) break;
+        node.children[san] = {
+          move: san,
+          children: {},
+          names: [],
+          lineCount: 0,
+          board: result.board,
+          from: result.from,
+          to: result.to,
+          white: !node.white,
+        };
+      }
+      node.children[san].lineCount++;
+      node = node.children[san];
+    }
+    if (line.name) node.names.push(line.name);
+    if (line.notes) node.notes = line.notes;
+  }
+  return root;
+}
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let tree = null;
+let navPath = []; // list of SAN moves navigated so far
+let currentNode = null;
+
+function saveData() { localStorage.setItem('chess-openings', JSON.stringify(openings)); }
+
+function exportBackup() {
+  const data = { version: 1, exportedAt: new Date().toISOString(), openings };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `chess-openings-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importBackup(ev) {
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      const imported = Array.isArray(data.openings) ? data.openings : (Array.isArray(data) ? data : null);
+      if (!imported) { alert('Invalid backup file: expected an array of openings.'); return; }
+      if (!confirm(`Restore ${imported.length} opening(s)? This will replace your current repertoire.`)) return;
+      openings = imported;
+      saveData();
+      currentOpeningIdx = null;
+      tree = null;
+      currentNode = null;
+      navPath = [];
+      document.getElementById('board-section').style.display = 'none';
+      document.getElementById('no-opening-msg').style.display = 'flex';
+      document.getElementById('editor-content').innerHTML = '<div class="empty-state">Select an opening to manage its lines.</div>';
+      document.getElementById('editor-title').textContent = 'Lines';
+      document.getElementById('add-line-btn').style.display = 'none';
+      renderOpeningList();
+    } catch (e) {
+      alert('Could not read backup file: ' + e.message);
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ─── Rendering ───────────────────────────────────────────────────────────────
+function renderOpeningList() {
+  const el = document.getElementById('opening-list');
+  if (!openings.length) {
+    el.innerHTML = '<div class="empty-state">No openings yet.<br>Create one to get started.</div>';
+    return;
+  }
+  el.innerHTML = openings.map((o,i)=>`
+    <div class="opening-item ${currentOpeningIdx===i?'active':''}">
+      <div class="opening-item-content" onclick="selectOpening(${i})">
+        <div class="opening-name">${o.name}</div>
+        <div class="opening-meta">
+          ${(o.lines||[]).length} line${(o.lines||[]).length===1?'':'s'}
+          ${o.color?'· '+o.color:''}
+        </div>
+      </div>
+      <div class="order-btns">
+        <button class="order-btn" onclick="event.stopPropagation(); moveOpeningUp(${i})" title="Move up" ${i===0?'disabled':''}>▲</button>
+        <button class="order-btn" onclick="event.stopPropagation(); moveOpeningDown(${i})" title="Move down" ${i===openings.length-1?'disabled':''}>▼</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectOpening(idx) {
+  currentOpeningIdx = idx;
+  navPath = [];
+  const o = openings[idx];
+  tree = buildTree(o.lines||[]);
+  currentNode = tree;
+  renderOpeningList();
+  renderEditorPanel();
+  showBoardSection();
+  renderBoard(tree.board, null, null);
+  renderMoveSequence();
+  renderBranches();
+}
+
+function showBoardSection() {
+  document.getElementById('no-opening-msg').style.display='none';
+  const bs = document.getElementById('board-section');
+  bs.style.display='flex';
+}
+
+function renderBoard(board, fromSq, toSq) {
+  const el = document.getElementById('board');
+  el.innerHTML='';
+  const o = openings[currentOpeningIdx];
+  const flipped = o && o.color === 'black'; // black at bottom = flip board
+  const rankOrder = flipped ? [0,1,2,3,4,5,6,7] : [7,6,5,4,3,2,1,0];
+  const fileOrder = flipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
+  for (const r of rankOrder) {
+    for (const c of fileOrder) {
+      const sq = rcToSquare(r,c);
+      const isLight = (r+c)%2===0;
+      const piece = board[r][c];
+      const div=document.createElement('div');
+      div.className='square '+(isLight?'light':'dark');
+      if (sq===fromSq) div.classList.add('move-from');
+      if (sq===toSq) div.classList.add('move-to');
+      if (piece) {
+        const isWhitePiece = piece === piece.toUpperCase();
+        const span = document.createElement('span');
+        span.className = isWhitePiece ? 'piece-white' : 'piece-black';
+        span.textContent = PIECES[piece] || piece;
+        div.appendChild(span);
+      }
+      // coords: rank on left (a-file for white, h-file for black), file on bottom row (r=0 white view, r=7 black view)
+      const leftColumn = flipped ? c===7 : c===0;
+      if (leftColumn) { const s=document.createElement('span'); s.className='coord-rank'; s.textContent=r+1; div.appendChild(s); }
+      const bottomRow = flipped ? r===7 : r===0;
+      if (bottomRow) { const s=document.createElement('span'); s.className='coord-file'; s.textContent=String.fromCharCode(97+c); div.appendChild(s); }
+      el.appendChild(div);
+    }
+  }
+}
+
+function renderMoveSequence() {
+  const el = document.getElementById('move-sequence');
+  if (!navPath.length) { el.innerHTML='<span style="color:var(--muted);font-family:JetBrains Mono,monospace;font-size:0.75rem;font-style:italic;">Start position</span>'; return; }
+  let html='';
+  for (let i=0;i<navPath.length;i++) {
+    if (i%2===0) html+=`<span class="move-token move-num">${Math.floor(i/2)+1}.</span>`;
+    html+=`<span class="move-token ${i===navPath.length-1?'active':''}" onclick="goToMove(${i})">${navPath[i]}</span>`;
+  }
+  el.innerHTML=html;
+}
+
+function renderBranches() {
+  const branchSec = document.getElementById('branch-section');
+  const branchList = document.getElementById('branches-list');
+  if (!currentNode) { branchSec.style.display='none'; return; }
+  const branches = Object.keys(currentNode.children);
+  if (!branches.length) {
+    branchSec.style.display='block';
+    const note = currentNode.notes?.trim();
+    branchList.innerHTML = note
+      ? `<div style="color:var(--muted);font-size:0.72rem;font-style:italic;white-space:pre-wrap">${note}</div>`
+      : '<div style="color:var(--muted);font-size:0.72rem;font-style:italic;">End of line.</div>';
+    return;
+  }
+  branchSec.style.display='block';
+  const moveNum = Math.floor(navPath.length/2)+1;
+  const isWhite = navPath.length%2===0;
+  const lines = openings[currentOpeningIdx]?.lines || [];
+  const branchesSorted = [...branches].sort((a, b) =>
+    (currentNode.children[b].lineCount || 0) - (currentNode.children[a].lineCount || 0));
+  branchList.innerHTML = branchesSorted.map(san=>{
+    const prefix = isWhite ? `${moveNum}.` : `${moveNum}...`;
+    const labels = getLabelsForMove(lines, navPath, san);
+    const escape = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const labelsHtml = labels.length
+      ? `<div class="branch-labels">${labels.map(l => `<div class="branch-label">${escape(l)}</div>`).join('')}</div>`
+      : '';
+    return `<div class="branch-item" data-move="${escape(san)}" onclick="followBranch(this.dataset.move)">
+      <span class="branch-arrow">→</span>
+      <div>
+        <div><span style="color:var(--muted);font-size:0.65rem">${prefix}</span> <span class="branch-move">${escape(san)}</span></div>
+        ${labelsHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function followBranch(san) {
+  if (!currentNode || !currentNode.children[san]) return;
+  navPath.push(san);
+  currentNode = currentNode.children[san];
+  renderBoard(currentNode.board, currentNode.from, currentNode.to);
+  renderMoveSequence();
+  renderBranches();
+}
+
+function goToMove(idx) {
+  // replay from root
+  let node = tree;
+  for (let i=0;i<=idx;i++) {
+    node = node.children[navPath[i]];
+    if (!node) break;
+  }
+  navPath = navPath.slice(0, idx+1);
+  currentNode = node;
+  renderBoard(currentNode.board, currentNode.from, currentNode.to);
+  renderMoveSequence();
+  renderBranches();
+}
+
+function goToStart() {
+  navPath=[];
+  currentNode=tree;
+  renderBoard(tree.board,null,null);
+  renderMoveSequence();
+  renderBranches();
+}
+
+function stepBack() {
+  if (!navPath.length) return;
+  navPath.pop();
+  let node=tree;
+  for (const m of navPath) node=node.children[m];
+  currentNode=node;
+  const from = navPath.length?node.from:null;
+  const to = navPath.length?node.to:null;
+  renderBoard(node.board,from,to);
+  renderMoveSequence();
+  renderBranches();
+}
+
+function stepForward() {
+  if (!currentNode) return;
+  const branches = Object.keys(currentNode.children);
+  if (branches.length===1) followBranch(branches[0]);
+  // if multiple branches, user picks from UI
+}
+
+function goToEnd() {
+  // follow first branch all the way
+  let node = currentNode;
+  while (Object.keys(node.children).length===1) {
+    const san = Object.keys(node.children)[0];
+    navPath.push(san);
+    node = node.children[san];
+  }
+  currentNode=node;
+  renderBoard(node.board,node.from,node.to);
+  renderMoveSequence();
+  renderBranches();
+}
+
+function renderEditorPanel() {
+  const o = openings[currentOpeningIdx];
+  if (!o) return;
+  document.getElementById('editor-title').textContent = o.name;
+  document.getElementById('add-line-btn').style.display='inline-block';
+
+  const lines = o.lines||[];
+  let linesHtml = '';
+  if (lines.length) {
+    const grouped = {};
+    const chapterOrder = [];
+    const chapterSubOrder = {};
+    lines.forEach((l, i) => {
+      const ch = (l.chapter || '').trim();
+      const sub = (l.subchapter || '').trim();
+      if (!grouped[ch]) {
+        grouped[ch] = {};
+        chapterOrder.push(ch);
+      }
+      if (!grouped[ch][sub]) {
+        grouped[ch][sub] = [];
+        if (!chapterSubOrder[ch]) chapterSubOrder[ch] = [];
+        chapterSubOrder[ch].push(sub);
+      }
+      grouped[ch][sub].push({ l, i });
+    });
+    for (const ch of chapterOrder) {
+      const chapterLabel = ch || 'Uncategorized';
+      linesHtml += `<div class="chapter-group collapsed"><div class="chapter-header" onclick="this.closest('.chapter-group').classList.toggle('collapsed')"><span class="collapse-icon">▼</span>${chapterLabel}</div><div class="chapter-content">`;
+      const subchapters = chapterSubOrder[ch] || [];
+      for (const sub of subchapters) {
+        if (sub) linesHtml += `<div class="subchapter-group collapsed"><div class="subchapter-header" onclick="this.closest('.subchapter-group').classList.toggle('collapsed')"><span class="collapse-icon">▼</span>${sub}</div><div class="subchapter-content">`;
+        const items = grouped[ch][sub];
+          for (const { l, i } of items) {
+          linesHtml += `
+            <div class="line-entry" onclick="editLine(${i})" title="Click to edit">
+              <div style="flex:1">
+                <div class="line-entry-name">${l.name||'(unnamed)'}</div>
+                <div class="line-entry-moves">${l.moves||''}</div>
+              </div>
+              <span class="line-del" onclick="event.stopPropagation(); deleteLine(${i})" title="Remove">✕</span>
+            </div>`;
+        }
+        if (sub) linesHtml += '</div></div>';
+      }
+      linesHtml += '</div></div>';
+    }
+  } else {
+    linesHtml = '<div class="empty-state">No lines yet.</div>';
+  }
+
+  document.getElementById('editor-content').innerHTML = `
+    <div style="margin-bottom:8px">
+      <div class="editor-label" style="margin-bottom:4px">Opening</div>
+      <div style="font-family:Playfair Display,serif;font-size:1rem;color:var(--parchment)">${o.name}</div>
+    </div>
+    <hr class="divider">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="editor-label">Lines (${lines.length})</div>
+    </div>
+    <div class="line-list">${linesHtml}</div>
+    <hr class="divider">
+    <button class="btn btn-accent btn-sm" onclick="deleteOpening()" style="width:100%;text-align:center">Remove opening</button>
+  `;
+}
+
+// ─── CRUD ────────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById('modal-'+id).classList.add('open'); }
+function closeModal(id) { document.getElementById('modal-'+id).classList.remove('open'); }
+
+function createOpening() {
+  const name = document.getElementById('new-opening-name').value.trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  const color = document.getElementById('new-opening-color').value;
+  openings.push({name, color, lines:[]});
+  saveData();
+  closeModal('new-opening');
+  document.getElementById('new-opening-name').value='';
+  selectOpening(openings.length-1);
+  renderOpeningList();
+}
+
+function openAddLineModalForNew() {
+  editingLineIdx = null;
+  document.getElementById('add-line-modal-title').textContent = 'Add Line';
+  document.getElementById('add-line-submit-btn').textContent = 'Add Line';
+  document.getElementById('new-line-chapter').value = '';
+  document.getElementById('new-line-subchapter').value = '';
+  document.getElementById('new-line-name').value = '';
+  document.getElementById('new-line-moves').value = '';
+  document.getElementById('new-line-notes').value = '';
+  openModal('add-line');
+}
+
+function editLine(idx) {
+  editingLineIdx = idx;
+  const line = openings[currentOpeningIdx].lines[idx];
+  document.getElementById('add-line-modal-title').textContent = 'Edit Line';
+  document.getElementById('add-line-submit-btn').textContent = 'Save';
+  document.getElementById('new-line-chapter').value = line.chapter || '';
+  document.getElementById('new-line-subchapter').value = line.subchapter || '';
+  document.getElementById('new-line-name').value = line.name || '';
+  document.getElementById('new-line-moves').value = line.moves || '';
+  document.getElementById('new-line-notes').value = line.notes || '';
+  openModal('add-line');
+}
+
+function submitLineForm() {
+  if (editingLineIdx !== null) {
+    updateLine(editingLineIdx);
+  } else {
+    addLine();
+  }
+}
+
+function addLine() {
+  const chapter = document.getElementById('new-line-chapter').value.trim();
+  const subchapter = document.getElementById('new-line-subchapter').value.trim();
+  const name = document.getElementById('new-line-name').value.trim();
+  const movesRaw = document.getElementById('new-line-moves').value.trim();
+  const notes = document.getElementById('new-line-notes').value.trim();
+  if (!movesRaw) { alert('Please enter moves.'); return; }
+  // strip move numbers
+  const moves = movesRaw.replace(/\d+\./g,'').replace(/\s+/g,' ').trim();
+  openings[currentOpeningIdx].lines.push({chapter, subchapter, name, moves, notes});
+  saveData();
+  closeAddLineModal();
+  // rebuild tree
+  tree = buildTree(openings[currentOpeningIdx].lines);
+  currentNode = tree;
+  navPath = [];
+  renderBoard(tree.board,null,null);
+  renderMoveSequence();
+  renderBranches();
+  renderEditorPanel();
+}
+
+function updateLine(idx) {
+  const chapter = document.getElementById('new-line-chapter').value.trim();
+  const subchapter = document.getElementById('new-line-subchapter').value.trim();
+  const name = document.getElementById('new-line-name').value.trim();
+  const movesRaw = document.getElementById('new-line-moves').value.trim();
+  const notes = document.getElementById('new-line-notes').value.trim();
+  if (!movesRaw) { alert('Please enter moves.'); return; }
+  const moves = movesRaw.replace(/\d+\./g,'').replace(/\s+/g,' ').trim();
+  openings[currentOpeningIdx].lines[idx] = {chapter, subchapter, name, moves, notes};
+  saveData();
+  closeAddLineModal();
+  tree = buildTree(openings[currentOpeningIdx].lines);
+  currentNode = tree;
+  navPath = [];
+  renderBoard(tree.board,null,null);
+  renderMoveSequence();
+  renderBranches();
+  renderEditorPanel();
+}
+
+function closeAddLineModal() {
+  closeModal('add-line');
+  editingLineIdx = null;
+  document.getElementById('add-line-modal-title').textContent = 'Add Line';
+  document.getElementById('add-line-submit-btn').textContent = 'Add Line';
+  document.getElementById('new-line-chapter').value = '';
+  document.getElementById('new-line-subchapter').value = '';
+  document.getElementById('new-line-name').value = '';
+  document.getElementById('new-line-moves').value = '';
+  document.getElementById('new-line-notes').value = '';
+}
+
+function deleteLine(idx) {
+  if (!confirm('Remove this line?')) return;
+  openings[currentOpeningIdx].lines.splice(idx,1);
+  saveData();
+  tree = buildTree(openings[currentOpeningIdx].lines);
+  currentNode = tree;
+  navPath=[];
+  renderBoard(tree.board,null,null);
+  renderMoveSequence();
+  renderBranches();
+  renderEditorPanel();
+}
+
+function moveOpeningUp(idx) {
+  if (idx <= 0) return;
+  [openings[idx - 1], openings[idx]] = [openings[idx], openings[idx - 1]];
+  if (currentOpeningIdx === idx) currentOpeningIdx = idx - 1;
+  else if (currentOpeningIdx === idx - 1) currentOpeningIdx = idx;
+  saveData();
+  renderOpeningList();
+}
+
+function moveOpeningDown(idx) {
+  if (idx >= openings.length - 1) return;
+  [openings[idx], openings[idx + 1]] = [openings[idx + 1], openings[idx]];
+  if (currentOpeningIdx === idx) currentOpeningIdx = idx + 1;
+  else if (currentOpeningIdx === idx + 1) currentOpeningIdx = idx;
+  saveData();
+  renderOpeningList();
+}
+
+function deleteOpening() {
+  if (!confirm('Delete this opening and all its lines?')) return;
+  openings.splice(currentOpeningIdx,1);
+  saveData();
+  currentOpeningIdx=null; tree=null; currentNode=null; navPath=[];
+  document.getElementById('board-section').style.display='none';
+  document.getElementById('no-opening-msg').style.display='flex';
+  document.getElementById('editor-content').innerHTML='<div class="empty-state">Select an opening to manage its lines.</div>';
+  document.getElementById('editor-title').textContent='Lines';
+  document.getElementById('add-line-btn').style.display='none';
+  renderOpeningList();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderOpeningList();
+if (openings.length > 0 && currentOpeningIdx === null) {
+  selectOpening(0);
+}
+</script>
+</body>
+</html>
