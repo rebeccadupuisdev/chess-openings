@@ -2,6 +2,8 @@
 
 A personal chess repertoire manager. Create openings, add lines in SAN notation, and explore variations on an interactive board.
 
+**Live site:** [chess.rebeccadupuis.ca](https://chess.rebeccadupuis.ca)
+
 ## Features
 
 - **Repertoire management** — Create openings for White or Black
@@ -11,7 +13,7 @@ A personal chess repertoire manager. Create openings, add lines in SAN notation,
 
 ## Usage
 
-Open `index.html` in a browser. No build step or server required.
+Use the [hosted app](https://chess.rebeccadupuis.ca), or open `index.html` in a browser locally. No build step or server required.
 
 Data is stored in `localStorage`; use Export to save a backup file.
 
